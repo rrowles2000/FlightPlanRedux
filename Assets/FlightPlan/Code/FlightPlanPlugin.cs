@@ -296,10 +296,11 @@ namespace FlightPlan
                     // UitkForKsp2.API.Window::CreateInternal, IL_0025 and IL_002c-IL_0034), so the old
                     // line was already redundant. The shipped K2-D2 window sets nothing extra on its
                     // renderer either (K2D2_Plugin.cs:314-317).
-                    PanelRenderer panel = Window.Create(windowOptions, fpUiTree);
+                    // Redux stable 0.2.8.5 (Unity 6000.4): Window.Create returns the window's UIDocument.
+                    UIDocument panel = Window.Create(windowOptions, fpUiTree);
                     if (panel == null)
                     {
-                        Logger.LogError("[FlightPlan] Window.Create returned no PanelRenderer - " +
+                        Logger.LogError("[FlightPlan] Window.Create returned no UIDocument - " +
                                         "the controller has nothing to bind to");
                     }
                     else
@@ -1113,7 +1114,7 @@ namespace FlightPlan
         public bool Circularize(double burnUT, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"Circularize {BurnTimeOption.TimeRefDesc}");
             Vector3d _deltaV = OrbitalManeuverCalculator.DeltaVToCircularize(_orbit, burnUT);
@@ -1134,7 +1135,7 @@ namespace FlightPlan
         public bool SetNewPe(double burnUT, double newPe, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetNewPe {BurnTimeOption.TimeRefDesc}");
 
@@ -1156,7 +1157,7 @@ namespace FlightPlan
         public bool SetNewAp(double burnUT, double newAp, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetNewAp {BurnTimeOption.TimeRefDesc}");
 
@@ -1178,7 +1179,7 @@ namespace FlightPlan
         public bool Ellipticize(double burnUT, double newAp, double newPe, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"Ellipticize: Set New Pe and Ap {BurnTimeOption.TimeRefDesc}");
 
@@ -1206,7 +1207,7 @@ namespace FlightPlan
         public bool SetInclination(double burnUT, double inclination, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetInclination: Set New Inclination {inclination}° {BurnTimeOption.TimeRefDesc}");
             Vector3d _deltaV;
@@ -1228,7 +1229,7 @@ namespace FlightPlan
         public bool SetNewLAN(double burnUT, double newLANvalue, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetNewLAN: Set New LAN {newLANvalue}° {BurnTimeOption.TimeRefDesc}");
 
@@ -1253,7 +1254,7 @@ namespace FlightPlan
         public bool SetNodeLongitude(double burnUT, double newNodeLongValue, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetNodeLongitude: Set Node Longitude {newNodeLongValue}° {BurnTimeOption.TimeRefDesc}");
 
@@ -1275,7 +1276,7 @@ namespace FlightPlan
         public bool SetNewSMA(double burnUT, double newSMA, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             Logger.LogDebug($"SetNewSMA {BurnTimeOption.TimeRefDesc}");
 
@@ -1298,7 +1299,7 @@ namespace FlightPlan
         public bool MatchPlanes(TimeReference time_ref, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)
@@ -1350,7 +1351,7 @@ namespace FlightPlan
         public bool HohmannTransfer(double burnUT, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)
@@ -1425,7 +1426,7 @@ namespace FlightPlan
             // Similar to code in MechJebModuleRendezvousGuidance.cs for "Get Closer" Button code.
 
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)
@@ -1464,7 +1465,7 @@ namespace FlightPlan
         public bool CourseCorrection(double burnUT, double interceptDistance, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)
@@ -1512,7 +1513,7 @@ namespace FlightPlan
         public bool MoonReturn(double burnUT, double targetMRPeR, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
             Vector3d _deltaV;
 
             Logger.LogDebug($"MoonReturn: Return from {_orbit.referenceBody.Name} {BurnTimeOption.TimeRefDesc} seeking Pe {targetMRPeR / 1000:N3} km");
@@ -1545,7 +1546,7 @@ namespace FlightPlan
         public bool MatchVelocity(double burnUT, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)
@@ -1577,7 +1578,7 @@ namespace FlightPlan
         public bool PlanetaryXfer(double burnUT, double burnOffsetFactor = -0.5)
         {
             double _UT = Game.UniverseModel.UniverseTime;
-            IKeplerPatch _orbit = _activeVessel.Orbit;
+            PatchedConicsOrbit _orbit = _activeVessel.Orbit;
 
             IKeplerOrbit tgtOrbit = null;
             if (_currentTarget.IsPart)

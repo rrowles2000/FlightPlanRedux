@@ -665,7 +665,7 @@ namespace MuMech
         }
 
         // This is the entry point for the course-correction to a target orbit which is a celestial
-        public static Vector3d DeltaVAndTimeForCheapestCourseCorrection(IKeplerPatch o, double UT, IKeplerOrbit target, CelestialBodyComponent targetBody, double finalPeR,
+        public static Vector3d DeltaVAndTimeForCheapestCourseCorrection(PatchedConicsOrbit o, double UT, IKeplerOrbit target, CelestialBodyComponent targetBody, double finalPeR,
             out double burnUT)
         {
             double now = Game.UniverseModel.UniverseTime;
@@ -738,7 +738,7 @@ namespace MuMech
         public static Vector3d DeltaVAndTimeForInterplanetaryTransferEjection(IKeplerOrbit o, double UT, IKeplerOrbit target, bool syncPhaseAngle,
             out double burnUT)
         {
-            IKeplerPatch planetOrbit = o.referenceBody.Orbit;
+            PatchedConicsOrbit planetOrbit = o.referenceBody.Orbit;
             FlightPlanPlugin.Logger.LogDebug($"DeltaVAndTimeForInterplanetaryTransferEjection: From {o.referenceBody.Name} at UT {FPUtility.SecondsToTimeString(UT)}");
             FlightPlanPlugin.Logger.LogDebug($"DeltaVAndTimeForInterplanetaryTransferEjection: To {FlightPlanPlugin.Instance._currentTarget.Name}");
 
@@ -1192,7 +1192,7 @@ namespace MuMech
         //DeltaVForCourseCorrection (a function that has been removed due to being unused).
         public static Vector3d DeltaVAndTimeForInterplanetaryLambertTransferEjection(IKeplerOrbit o, double UT, IKeplerOrbit target, out double burnUT)
         {
-            IKeplerPatch planetOrbit = o.referenceBody.Orbit;
+            PatchedConicsOrbit planetOrbit = o.referenceBody.Orbit;
 
             //Compute the time and dV for a Hohmann transfer where we pretend that we are the planet we are orbiting.
             //This gives us the "ideal" deltaV and UT of the ejection burn, if we didn't have to worry about waiting for the right

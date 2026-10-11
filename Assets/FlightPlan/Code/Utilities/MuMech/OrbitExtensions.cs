@@ -916,9 +916,9 @@ namespace MuMech
 
 
         // Return the orbit of the parent body orbiting the sun
-        public static IKeplerPatch TopParentOrbit(this IKeplerPatch orbit)
+        public static PatchedConicsOrbit TopParentOrbit(this PatchedConicsOrbit orbit)
         {
-            IKeplerPatch result = orbit;
+            PatchedConicsOrbit result = orbit;
             while (result.referenceBody != result.referenceBody.GetRelevantStar())
             {
                 result = result.referenceBody.Orbit;
@@ -932,7 +932,7 @@ namespace MuMech
             return "PeriapsisArl:" + o.PeriapsisArl + " ApoapsisArl:" + o.ApoapsisArl + " SMA:" + o.semiMajorAxis + " ECC:" + o.eccentricity + " INC:" + o.inclination + " LAN:" + o.longitudeOfAscendingNode + " ArgP:" + o.argumentOfPeriapsis + " TA:" + o.TrueAnomaly*Statics.RAD2DEG;
         }
 
-        public static double SuicideBurnCountdown(IKeplerPatch orbit, VesselComponent vessel) // was: (Orbit orbit, VesselState vesselState, Vessel vessel)
+        public static double SuicideBurnCountdown(PatchedConicsOrbit orbit, VesselComponent vessel) // was: (Orbit orbit, VesselState vesselState, Vessel vessel)
         {
             if (vessel.mainBody == null) return 0;
             if (orbit.PeriapsisArl > 0) return double.PositiveInfinity;

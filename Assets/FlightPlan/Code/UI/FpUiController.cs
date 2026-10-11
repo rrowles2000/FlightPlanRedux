@@ -36,7 +36,7 @@ namespace FlightPlan
         // returns (see Initialize below). It is the successor of the 0.2.8.5 UIDocument: at this pin
         // `Window.Create` returns a PanelRenderer and the visual tree root is FETCHED from it through
         // `UitkForKsp2.API.Extensions.GetWindowRoot(renderer)` - never read off the window object.
-        private static PanelRenderer _panel;
+        private static UIDocument _panel;
 
         private bool initialized = false;
         public static bool GUIenabled = true;
@@ -635,15 +635,15 @@ namespace FlightPlan
             {
                 if (_panel == null)
                 {
-                    _panel = GetComponent<PanelRenderer>();
+                    _panel = GetComponent<UIDocument>();
                 }
                 if (_panel == null)
                 {
-                    FlightPlanPlugin.Logger.LogError("[FlightPlan] FpUiController.Start: no PanelRenderer on the " +
+                    FlightPlanPlugin.Logger.LogError("[FlightPlan] FpUiController.Start: no UIDocument on the " +
                                                      "window's GameObject - the window cannot be wired up");
                     return;
                 }
-                _panel.RegisterUIReloadCallback(OnUiReload);
+                OnUiReload(_panel);
             }
         }
 
@@ -658,17 +658,19 @@ namespace FlightPlan
         /// `UitkForKsp2.Panel.WindowComponent.Initialize` makes (monodis: UitkForKsp2.dll, IL_002f) - so
         /// this needs no UitkForKsp2 wrapper.
         /// </summary>
-        public void Initialize(PanelRenderer panel)
+        public void Initialize(UIDocument panel)
         {
             if (panel == null)
             {
                 FlightPlanPlugin.Logger.LogError("[FlightPlan] FpUiController.Initialize got a null " +
-                                                 "PanelRenderer - the window cannot be wired up");
+                                                 "UIDocument - the window cannot be wired up");
                 return;
             }
 
+            // Redux stable 0.2.8.5 has no PanelRenderer UI-reload callback; the tree is already built
+            // by Window.Create, so bind to it directly.
             _panel = panel;
-            _panel.RegisterUIReloadCallback(OnUiReload);
+            OnUiReload(_panel);
         }
 
         /// <summary>
@@ -678,12 +680,12 @@ namespace FlightPlan
         /// the next Update() re-run InitializeElements() - otherwise the controller would go on writing into
         /// detached elements and the fresh tree would keep its UXML-default styling.
         /// </summary>
-        private void OnUiReload(PanelRenderer panel, VisualElement root)
+        private void OnUiReload(UIDocument panel)
         {
             if (panel == null)
             {
                 FlightPlanPlugin.Logger.LogError("[FlightPlan] FpUiController.OnUiReload got a null " +
-                                                 "PanelRenderer - the window cannot be wired up");
+                                                 "UIDocument - the window cannot be wired up");
                 return;
             }
 
@@ -695,7 +697,7 @@ namespace FlightPlan
             initialized = false;
         }
 
-        public IKeplerPatch Orbit;
+        public PatchedConicsOrbit Orbit;
         public CelestialBodyComponent ReferenceBody;
 
         public static string SituationToString(VesselSituations situation)
@@ -788,6 +790,23 @@ namespace FlightPlan
             return nodes == null ? 0 : nodes.Count;
         }
 
+        // Mirrors UitkForKsp2.API.Window.ResolveWindowRoot (private on Redux stable 0.2.8.5): the content
+        // root is the first child of the document root, descending through single-child TemplateContainers.
+        private static VisualElement ResolveWindowRoot(VisualElement documentRoot)
+        {
+            if (documentRoot == null || documentRoot.hierarchy.childCount <= 0)
+            {
+                return null;
+            }
+
+            VisualElement element = documentRoot.hierarchy.ElementAt(0);
+            while (element is TemplateContainer && element.hierarchy.childCount == 1)
+            {
+                element = element.hierarchy.ElementAt(0);
+            }
+            return element;
+        }
+
         public void SetupDocument()
         {
             // The root is FETCHED from the PanelRenderer Window.Create returned - it is not a
@@ -796,7 +815,7 @@ namespace FlightPlan
             // (`UitkForKsp2.API.Extensions::GetWindowRoot` -> `Window::ResolveWindowRoot`), which is the
             // element the legacy addressed as `document.rootVisualElement[0]`; the tree operations below
             // are therefore applied to it directly instead of through a `[0]` index.
-            container = UitkForKsp2.API.Extensions.GetWindowRoot(_panel);
+            container = ResolveWindowRoot(_panel.rootVisualElement);
             if (container == null)
             {
                 FlightPlanPlugin.Logger.LogError("[FlightPlan] FpUiController.SetupDocument: the root " +
@@ -1925,7 +1944,7 @@ namespace FlightPlan
                         _activeVessel.SetTargetByID(targetBodies[evt.newValue].GlobalId);
                         _currentTarget = _activeVessel.TargetObject;
     #if DEBUG
-                        IKeplerPatch o = (IKeplerPatch)_currentTarget.Orbit;
+                        PatchedConicsOrbit o = (PatchedConicsOrbit)_currentTarget.Orbit;
                         double _synchronousPeriod = _currentTarget.CelestialBody.rotationPeriod;
                         double _semiSynchronousPeriod = _synchronousPeriod / 2;
                         double _synchronousAlt = SMACalc(_synchronousPeriod);
@@ -3631,7 +3650,7 @@ namespace FlightPlan
             double thisCA, thisCATime, nextCA, nextCATime;
             int patchIdx;
             Vector3d tgtVel, thisVel, nextVel;
-            IKeplerPatch vesselOrbit = FlightPlanPlugin.Instance._activeVessel.Orbit;
+            PatchedConicsOrbit vesselOrbit = FlightPlanPlugin.Instance._activeVessel.Orbit;
             var target = FlightPlanPlugin.Instance._currentTarget;
             double UT = Game.UniverseModel.UniverseTime;
             IKeplerOrbit targetOrbit = null;

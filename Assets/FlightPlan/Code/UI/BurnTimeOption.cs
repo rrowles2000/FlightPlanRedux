@@ -85,7 +85,7 @@ namespace FlightPlan
             // Set the requested burn time based on the selected timing _option
             double UT = Game.UniverseModel.UniverseTime;
             FlightPlanPlugin Plugin = FlightPlanPlugin.Instance;
-            IKeplerPatch Orbit = Plugin._activeVessel.Orbit;
+            PatchedConicsOrbit Orbit = Plugin._activeVessel.Orbit;
 
             SimulationObjectModel currentTarget = Plugin._currentTarget;
             IKeplerOrbit tgtOrbit = null;

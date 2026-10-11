@@ -33,7 +33,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-KSP2="${KSP2:-$HOME/.local/share/Steam/steamapps/common/Kerbal Space Program 2}"
+KSP2="${KSP2:-$HOME/.steam/steam/steamapps/common/Kerbal Space Program 2}"
 MANAGED="$KSP2/KSP2_x64_Data/Managed"
 STAGING="$REPO_ROOT/Packages/KSP2_x64"
 OUT_DIR="$REPO_ROOT/Deploy/FlightPlan"
@@ -84,29 +84,18 @@ UITK_METHODS="$(MONO_PATH="$MANAGED" monodis --method "$MANAGED/UitkForKsp2.dll"
 # code with synthetic dumps (real input must pass; each wrong shape must be refused). The real call
 # site is immediately below.
 assert_runtime_generation() {
+    # redux-stable-0.2.8.5 branch: gates target Redux stable 0.2.8.5.103184 (Unity 6000.4.1f1),
+    # where Window.Create returns UIDocument and PanelRenderer does not exist.
     local uie_typedefs="$1" uitk_methods="$2"
-
-    # Completeness first: --method exits 0 even when its rows did not resolve, so a count read from
-    # a broken dump is not evidence of anything.
     [ "$(grep -c 'failed to parse' <<< "$uitk_methods" || true)" = "0" ] \
-        || die "monodis --method could not resolve UitkForKsp2.dll's signatures.
-Pass MONO_PATH as a per-command prefix (never exported) and re-run."
-
-    # Exactly one row of the real shape: `NNN: UnityEngine.UIElements.PanelRenderer (flist=...)`.
-    # The anchored `$` this check used before could never match that row (measured 0 vs 5 hits).
-    [ "$(grep -cE '^[0-9]+: UnityEngine\.UIElements\.PanelRenderer \(' <<< "$uie_typedefs" || true)" = "1" ] \
-        || die "UnityEngine.UIElementsModule.dll does not define exactly one UnityEngine.UIElements.PanelRenderer.
-This is not the Redux 0.2.9.0.104521 runtime this build targets."
-
-    # Both documented Window.Create overloads (options+root, options+uxml) return PanelRenderer here.
-    [ "$(grep -c 'PanelRenderer Create' <<< "$uitk_methods" || true)" = "2" ] \
-        || die "UitkForKsp2.dll does not expose both Window.Create(...) -> PanelRenderer overloads.
-This is not the Redux 0.2.9.0.104521 runtime this build targets."
-
-    if grep -q 'UIDocument Create' <<< "$uitk_methods"; then
-        die "UitkForKsp2.dll exposes Window.Create(...) -> UIDocument: the superseded 0.2.8.5 shape.
-This build targets Redux 0.2.9.0.104521, where Window.Create returns PanelRenderer."
+        || die "monodis --method could not resolve UitkForKsp2.dll's signatures."
+    if grep -qE '^[0-9]+: UnityEngine\.UIElements\.PanelRenderer \(' <<< "$uie_typedefs"; then
+        die "UnityEngine.UIElementsModule.dll defines PanelRenderer: this is a 0.2.9.x (beta) runtime.
+Build the master branch for beta; this branch targets Redux stable 0.2.8.5."
     fi
+    [ "$(grep -c 'UIDocument Create (' <<< "$uitk_methods" || true)" = "2" ] \
+        || die "UitkForKsp2.dll does not expose both Window.Create(...) -> UIDocument overloads.
+This is not the Redux stable 0.2.8.5 runtime this branch targets."
 }
 assert_runtime_generation "$UIE_TYPEDEFS" "$UITK_METHODS"
 
@@ -179,7 +168,7 @@ find_csc() {
     fi
     command -v mono >/dev/null 2>&1 || return 1
     local proton_csc
-    proton_csc="$(find "$HOME/.local/share/Steam/steamapps/common" \
+    proton_csc="$(find -L "$HOME/.steam/steam/steamapps/common" \
         -path '*wine/mono*Roslyn/csc.exe' 2>/dev/null | sort | tail -1 || true)"
     [ -n "$proton_csc" ] || return 1
     echo "mono:$proton_csc"
@@ -278,16 +267,15 @@ TYPEREFS="$(monodis --typeref "$OUT_DLL" 2>/dev/null || true)"
 #     binding stub must pass it).
 assert_window_api_binding() {
     local typerefs="$1"
-    if ! grep -q 'PanelRenderer' <<< "$typerefs"; then
-        warn "No PanelRenderer typeref in the built assembly - it does not bind this pin's Window.Create."
+    if grep -q 'PanelRenderer' <<< "$typerefs"; then
+        warn "Found a PanelRenderer typeref - that type does not exist on Redux stable 0.2.8.5."
+        FAILED=1
+    fi
+    if ! grep -q 'UIDocument' <<< "$typerefs"; then
+        warn "No UIDocument typeref in the built assembly - it does not bind stable's Window.Create."
         FAILED=1
     else
-        log "PanelRenderer typeref present - bound to the 0.2.9.0.104521 window API."
-    fi
-    if grep -q 'UIDocument' <<< "$typerefs"; then
-        grep -n 'UIDocument' <<< "$typerefs" >&2
-        warn "Found a UIDocument typeref - the built assembly is bound to the superseded 0.2.8.5 window API."
-        FAILED=1
+        log "UIDocument typeref present - bound to the stable 0.2.8.5 window API."
     fi
 }
 assert_window_api_binding "$TYPEREFS"
@@ -319,7 +307,7 @@ if [ -n "$MISSING_REFS" ]; then
     warn "Referenced assemblies not present in the runtime:$MISSING_REFS"
     FAILED=1
 else
-    log "All assembly references resolve against the staged 0.2.9.0.104521 runtime."
+    log "All assembly references resolve against the staged runtime."
 fi
 
 [ $FAILED -eq 0 ] || die "Verification failed - refusing to package this build."

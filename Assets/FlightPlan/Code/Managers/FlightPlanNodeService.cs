@@ -170,7 +170,7 @@ namespace FlightPlan
         public static bool CreateNodeAtDeltaV(Vector3d deltaV, double burnUT, double burnOffsetFactor = -0.5)
         {
             VesselComponent vessel = ActiveVessel();
-            IKeplerPatch orbit = vessel == null ? null : vessel.Orbit;
+            PatchedConicsOrbit orbit = vessel == null ? null : vessel.Orbit;
             if (orbit == null)
             {
                 Warn("CreateNodeAtDeltaV: no active vessel/orbit - node creation refused");
@@ -204,7 +204,7 @@ namespace FlightPlan
             // BurnVecToDv and DeltaVToManeuverNodeCoordinates are an exact pair (OrbitExtensions.cs
             // :891,:898 - an orthonormal frame decomposition and its recomposition).
             VesselComponent vessel = ActiveVessel();
-            IKeplerPatch orbit = vessel == null ? null : vessel.Orbit;
+            PatchedConicsOrbit orbit = vessel == null ? null : vessel.Orbit;
             Vector3d requestedDeltaV = orbit == null ? burnVector : orbit.BurnVecToDv(burnUT, burnVector);
             return CreateNodeAtUT(burnVector, burnUT, burnOffsetFactor, requestedDeltaV);
         }
@@ -448,7 +448,7 @@ namespace FlightPlan
                 yield break;
             }
 
-            IKeplerPatch orbit = vessel.Orbit;
+            PatchedConicsOrbit orbit = vessel.Orbit;
             ManeuverPlanComponent plan = PlanFor(vessel);
             if (orbit == null || plan == null)
             {
@@ -498,7 +498,7 @@ namespace FlightPlan
                 //     Assembly-CSharp.dll -> `ManeuverNodeData::SetManeuverState(class
                 //     KSP.Sim.impl.PatchedConicsOrbit)`), and the live vessel orbit is
                 //     `Redux.Ecs.Components.CurrentPatchedConicsOrbit` (rank 1: VesselComponent.get_Orbit()
-                //     returns KSP.Sim.IKeplerPatch; the ECS component implements the interfaces but is not
+                //     returns KSP.Sim.PatchedConicsOrbit; the ECS component implements the interfaces but is not
                 //     the concrete class), so any cast to it throws `InvalidCastException` in flight -
                 //     K2-D2 measured exactly that and shipped the fix
                 //     (mods/remote/K2D2Redux/.../ManeuverCreator/ManeuverCreator.cs ~:292-360):
@@ -666,7 +666,7 @@ namespace FlightPlan
             PatchedConicSolver solver = orbiter.PatchedConicSolver;
             if (solver == null) return null;
 
-            IKeplerPatch patch;
+            PatchedConicsOrbit patch;
             try
             {
                 patch = solver.FindPatchContainingUT(burnUT);
@@ -1129,7 +1129,7 @@ namespace FlightPlan
         /// </summary>
         public static double DefaultNodeUT(List<ManeuverNodeData> nodes, VesselComponent vessel, double UT)
         {
-            IKeplerPatch orbit = vessel == null ? null : vessel.Orbit;
+            PatchedConicsOrbit orbit = vessel == null ? null : vessel.Orbit;
             if (orbit == null)
             {
                 return UT + 30.0;
