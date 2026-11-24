@@ -48,7 +48,10 @@ namespace FlightPlan
         // Discovery is keyed by the plugin GUID, which for a Redux mod is its swinfo `mod_id`.
         // K2-D2 ships `"mod_id": "K2D2"`; the loader confirms it in the live log
         // (`[Space Warp] Attempting to register mod: K2D2, K2-D2`).
-        private const string K2D2ModId = "K2D2";
+        // K2D2 was renamed FIDO (2026-11-24, our fork): look for FIDO first, then the upstream K2D2.
+        private const string FidoModId = "FIDO";
+        private const string K2D2LegacyModId = "K2D2";
+        private static string K2D2ModId = FidoModId;
 
         public static FPOtherModsInterface instance;
 
@@ -206,11 +209,17 @@ namespace FlightPlan
             checkK2D2status = false;
 
             // `TryGetDescriptor` returns null (it does not throw) for a mod_id that is not in the list.
-            K2D2Descriptor = PluginList.TryGetDescriptor(K2D2ModId);
+            K2D2ModId = FidoModId;
+            K2D2Descriptor = PluginList.TryGetDescriptor(FidoModId);
+            if (K2D2Descriptor == null)
+            {
+                K2D2Descriptor = PluginList.TryGetDescriptor(K2D2LegacyModId);
+                if (K2D2Descriptor != null) K2D2ModId = K2D2LegacyModId;
+            }
 
             if (K2D2Descriptor == null)
             {
-                LogWarn("K2D2: unavailable - no descriptor for mod_id=K2D2 (K2-D2 is not installed); " +
+                LogWarn("K2D2: unavailable - no descriptor for mod_id=FIDO or K2D2 (FIDO/K2-D2 is not installed); " +
                         "the Execute button stays hidden and every planning feature works without it");
                 return;
             }
@@ -219,7 +228,7 @@ namespace FlightPlan
 
             if (K2D2Descriptor.Outdated || K2D2Descriptor.Unsupported)
             {
-                LogWarn($"K2D2: unavailable - the descriptor for mod_id=K2D2 is flagged by the loader " +
+                LogWarn($"K2D2: unavailable - the descriptor for mod_id={K2D2ModId} is flagged by the loader " +
                         $"(Outdated={K2D2Descriptor.Outdated}, Unsupported={K2D2Descriptor.Unsupported}, " +
                         $"version={k2d2Version}); Redux is not forced to load it");
                 return;
